@@ -1,11 +1,7 @@
 import React from 'react';
 import {
   Home,
-  Files,
-  Settings,
-  BarChart2,
-  CreditCard,
-  Table
+  Files
 } from 'lucide-react';
 import {
   Link,
@@ -28,18 +24,6 @@ const Sidebar = ({ isOpen, onToggle }) => {
       label: 'Subir Archivo', 
       path: '/archivos',
       active: location.pathname === '/archivos'
-    },
-    // { 
-    //   icon: <BarChart2 />, 
-    //   label: 'Analytics',
-    //   path: '/analytics',
-    //   active: location.pathname === '/analytics'
-    // },
-    { 
-      icon: <Table />, 
-      label: 'Archivo Cargados',
-      path: '/archivos-cargados',
-      active: location.pathname === '/archivos-cargados'
     }
   ];
 
@@ -57,7 +41,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
           transition-opacity duration-300
           ${isOpen ? 'opacity-100' : 'opacity-0'}
         `}>
-          Mi Dashboard
+          Data Science
         </h2>
         <button 
           onClick={onToggle} 

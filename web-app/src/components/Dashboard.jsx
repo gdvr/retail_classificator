@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import {
-    Home
-} from 'lucide-react';
-import {
     BrowserRouter as Router,
     Routes,
     Route,
@@ -11,8 +8,8 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
 import HomeApp from './HomeApp';
+// import FileTable from './FileTable';
 import FileUpload from './FileUpload';
-import FileTable from './FileTable';
 
 const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -35,7 +32,6 @@ const Dashboard = () => {
                     <Routes>
                         <Route path="/" element={<HomeApp />} />
                         <Route path="/archivos" element={<FileUpload />} />
-                        <Route path="/archivos-cargados" element={<FileTable />} />
                     </Routes>
                 </main>
 
