@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
     BarChart,
     Bar,
@@ -65,7 +66,6 @@ const HomeApp = () => {
     const [isProcessingKeyAvailable, setIsProcessingKeyAvailable] = useState(false);
 
     useEffect(() => {
-        // Verificar si hay una clave de procesamiento en localStorage
         const processingKey = localStorage.getItem('processingKey');
 
         if (processingKey) {
@@ -76,91 +76,47 @@ const HomeApp = () => {
 
     const fetchProcessedData = async (processingKey) => {
         try {
-            // Simular llamada a API para obtener datos procesados
-            const mockApiData = [
-                {
-                    stockDiaActual: 100,
-                    pedidoEnTransito: 'extend intuitive partnerships',
-                    pedidoProcesandose: '8.89E+12',
-                    productDescription: 'XBIGGB55G9M6386',
-                    productId: 'Lopez Prairie',
-                    storeId: 'Mortonville, WY 96411',
-                    storeDescription: 'Sullivan-Hughes',
-                    categoryId: 'CR##########',
-                    pais: '101200',
-                    fechaSemana: 'exploit value-added mindshare',
-                    etiqueta: 'Crítico',
-                    observacion: 'Observación 1'
-                },
-                {
-                    stockDiaActual: 50,
-                    pedidoEnTransito: 'optimize strategic solutions',
-                    pedidoProcesandose: '7.65E+12',
-                    productDescription: 'XBIGGB55G9M6387',
-                    productId: 'Smith Boulevard',
-                    storeId: 'Johnstown, CA 54321',
-                    storeDescription: 'Martinez-Lee',
-                    categoryId: 'SR##########',
-                    pais: '102300',
-                    fechaSemana: 'leverage cross-platform paradigms',
-                    etiqueta: 'Alto',
-                    observacion: 'Observación 2'
-                },
-                {
-                    stockDiaActual: 25,
-                    pedidoEnTransito: 'synergize dynamic networks',
-                    pedidoProcesandose: '6.54E+12',
-                    productDescription: 'XBIGGB55G9M6388',
-                    productId: 'Johnson Street',
-                    storeId: 'Sarahville, TX 78901',
-                    storeDescription: 'Garcia-Williams',
-                    categoryId: 'PR##########',
-                    pais: '103400',
-                    fechaSemana: 'implement innovative platforms',
-                    etiqueta: 'Crítico',
-                    observacion: 'Observación 3'
-                }
-            ];
+            // Realizar la solicitud GET con el processingKey en la URL
+            const response = await axios.get(`http://localhost:8000/processed-data/${processingKey}`);
+    
+            const mockApiData = response.data;
 
-            // Procesar datos para estadísticas de etiquetas
-            const etiquetaCounts = mockApiData.reduce((acc, item) => {
-                acc[item.etiqueta] = (acc[item.etiqueta] || 0) + 1;
-                return acc;
-            }, {});
-
-            const etiquetaStatsData = Object.entries(etiquetaCounts).map(([etiqueta, count]) => ({
-                etiqueta,
-                count
-            }));
-
-            // Procesar distribución por categoría
-            const categoryCounts = mockApiData.reduce((acc, item) => {
-                const category = item.categoryId.slice(0, 2);
-                acc[category] = (acc[category] || 0) + 1;
-                return acc;
-            }, {});
-
-            const categoryData = Object.entries(categoryCounts).map(([category, count]) => ({
-                name: category,
-                value: count
-            }));
-
-            // Actualizar estados
-            setEtiquetaStats(etiquetaStatsData);
-            setCategoryDistribution(categoryData);
-            setProcessedData(mockApiData);
-
-            toast.success('Datos procesados cargados exitosamente', {
-                position: "top-right",
-                autoClose: 3000,
-            });
+            console.log(response);
+    
+            if (Array.isArray(mockApiData)) {
+                // Procesar estadísticas de etiquetas
+                const etiquetaCounts = mockApiData.reduce((acc, item) => {
+                    acc[item.etiqueta] = (acc[item.etiqueta] || 0) + 1;
+                    return acc;
+                }, {});
+    
+                const etiquetaStatsData = Object.entries(etiquetaCounts).map(([etiqueta, count]) => ({
+                    etiqueta,
+                    count
+                }));
+    
+                // Procesar distribución por categoría
+                const categoryCounts = mockApiData.reduce((acc, item) => {
+                    const category = item.categoryId.slice(0, 2);
+                    acc[category] = (acc[category] || 0) + 1;
+                    return acc;
+                }, {});
+    
+                const categoryData = Object.entries(categoryCounts).map(([category, count]) => ({
+                    name: category,
+                    value: count
+                }));
+    
+                setEtiquetaStats(etiquetaStatsData);
+                setCategoryDistribution(categoryData);
+                setProcessedData(mockApiData);
+            } else {
+                console.error("La respuesta de la API no es un array:", mockApiData);
+            }
         } catch (error) {
-            toast.error('Error al cargar los datos procesados', {
-                position: "top-right",
-                autoClose: 3000,
-            });
+            console.error('Error fetching processed data:', error);
         }
-    };
+    };    
 
     // Paleta de colores para gráficos
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -175,7 +131,6 @@ const HomeApp = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-3 gap-6">
-                    {/* Estadísticas de Etiquetas */}
                     <div className="bg-white p-6 rounded-lg shadow-md col-span-2">
                         <h3 className="text-xl font-semibold mb-4">Productos por Etiqueta</h3>
                         <ResponsiveContainer width="100%" height={300}>
@@ -188,8 +143,6 @@ const HomeApp = () => {
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
-
-                    {/* Distribución de Categorías */}
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <h3 className="text-xl font-semibold mb-4">Productos por Categoría</h3>
                         <ResponsiveContainer width="100%" height={300}>
@@ -212,8 +165,6 @@ const HomeApp = () => {
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-
-                    {/* Tabla de Resumen */}
                     <div className="bg-white p-6 rounded-lg shadow-md col-span-3">
                         <h3 className="text-xl font-semibold mb-4">Resumen de Productos</h3>
                         <Table>
