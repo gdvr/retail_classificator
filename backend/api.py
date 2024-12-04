@@ -1,5 +1,6 @@
 from backend.utils.common import serialize_mongo_document
 from fastapi import FastAPI, HTTPException, File, UploadFile, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, create_model
 import joblib
@@ -24,6 +25,14 @@ df =  pd.read_csv("data/results.csv")
 best_model_name = df.iloc[0]["model"]
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with your frontend URL(s)
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE"],  # Specify allowed methods
+    allow_headers=["Authorization", "Content-Type"],  # Specify allowed headers
+)
 
 model = joblib.load(f"models/{best_model_name}")
 preprocessor = joblib.load('models/preprocessor.pkl')

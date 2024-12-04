@@ -1,6 +1,10 @@
- docker run -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\input:/app/input" --rm -it -p 5000:5000 --env-file .\.env --name retail_api retail_insights:latest /bin/sh
- 
- docker run -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\input:/app/input" -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\output:/app/output" --rm -it --env-file .\.env --name retail_batch retail_insights:latest /bin/sh
+docker build --no-cache  -t retail_insights .
+
+API
+docker run -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\input:/app/input" --rm -it -p 5000:5000 --env-file .\.env --name retail_api retail_insights:latest /bin/sh
+
+Batch 
+docker run -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\input:/app/input" -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\output:/app/output" --rm -it --env-file .\.env --name retail_batch retail_insights:latest /bin/sh
 python backend/deploy.py
 
 DATASET="datasets/WineQT.csv.parquet"
