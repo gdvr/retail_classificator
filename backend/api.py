@@ -104,7 +104,7 @@ async def upload_file(file: UploadFile = File(...)):
         return JSONResponse(content={"message": f"Failed to save file: {str(e)}"}, status_code=500)
 
 @app.get("/results")
-async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha' field")):
+async def results_by_date(fecha: str = Query(..., description="Filter by 'Fecha' field")):
     try:
         client = MongoClient("mongodb://localhost:27017/") 
         db = client["retail_classificator"]
@@ -131,29 +131,84 @@ async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha'
         winner_field_list = []
 
         for document in serialized_documents:
-            # Extract the values of fields_of_interest
-            values = {field: document.get(field, float('-inf')) for field in fields_of_interest}
-            
-            # Remove any None values from values
-            valid_values = {key: value for key, value in values.items() if value is not None}
-            
-            # If there are valid values, find the max value; otherwise, set a default winner_field
+            values = {field: document.get(field, float('-inf')) for field in fields_of_interest}            
+            valid_values = {key: value for key, value in values.items() if value is not None}            
             if valid_values:
                 winner_field = max(valid_values, key=valid_values.get)
             else:                
                 winner_field = document["category"] or "Not Valid Value"
             
-            # Add the winner field to the list for counting later
             winner_field_list.append(winner_field)
 
-        # Step 2: Group by 'winner_field' and count occurrences
         winner_field_counts = dict(Counter(winner_field_list))
 
-        # Step 3: Ensure all fields are in the result with a count, even if 0 occurrences
         result = {field: winner_field_counts.get(field, 0) for field in fields_of_interest}
-        result["No valid field"] = winner_field_counts.get("No valid field", 0)
+        result["No valid field"] = winner_field_counts.get("No Valid Value", 0)
 
         return {"counts": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notify")
+async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha' field"),
+                           store_id: str = Query(None, description="Filter by 'StoreId' field")):
+    try:
+        client = MongoClient("mongodb://localhost:27017/") 
+        db = client["retail_classificator"]
+        collection = db["results"]
+
+        # Construct the query filter
+        query = {"Fecha": fecha}
+        if store_id:
+            query["storeId"] = store_id  # Add storeId filter if provided
+
+        # Fetch the documents with the applied filter
+        documents = list(collection.find(query))
+        serialized_documents = [serialize_mongo_document(doc) for doc in documents]
+        
+        if not serialized_documents:
+            raise HTTPException(status_code=404, detail="No documents found with the given Fecha and StoreId.")
+
+        fields_of_interest = [
+            "Pedido insuficiente",
+            "Posible producto eliminando de catalogo",
+            "Posible quiebre de stock por pedido insuficiente",
+            "Posible venta atípica",
+            "Producto sano",
+            "inventario negativo",
+            "producto nuevo sin movimiento"
+        ]
+        
+        winner_field_list = []
+
+        messages = []
+        for document in serialized_documents:
+            # Extract the values of the fields of interest
+            values = {field: document.get(field, float('-inf')) for field in fields_of_interest}            
+            valid_values = {key: value for key, value in values.items() if value is not None}            
+            if valid_values:
+                winner_field = max(valid_values, key=valid_values.get)
+            else:
+                winner_field = document.get("category", "Not Valid Value")
+            
+            if winner_field == 'Posible producto eliminando de catalogo':
+                messages.append(f"El producto {document['productId']} podria estar eliminandose, por favor revisar su visibilidad para eliminarlo prontamente, ultima venta hace {document['Days Since Last Sale']} dias, stock: {document['Stock dia actual']}, porcentaje de tiendas con stock: {document['% global tiendas']}")
+            elif winner_field == 'Posible venta atípica':
+                messages.append(f"El producto {document['productId']} podria estar teniendo incremento abruptos en las ventas, por favor revisar la proyeccion y ajustar la cantidad a pedir, ultima venta hace {document['Days Since Last Sale']} dias, stock: {document['Stock dia actual']}, cantidad vendida: {document['Venta dia anterior']}, promedio de ultimas 4 semanas {document['Last 4 Weeks Avg']}")
+            elif winner_field == 'Posible quiebre de stock por pedido insuficiente':
+                messages.append(f"El producto {document['productId']} podria estar quedandose sin stock suficiente favor de verificar la cantidad pedida, ultima venta hace {document['Days Since Last Sale']} dias, stock: {document['Stock dia actual']}, dias proyectados antes del quiebre de stock {document['Remaining Days']}")
+            if winner_field != "Producto sano":
+                winner_field_list.append(winner_field)
+
+        # Count occurrences of each winner field
+        winner_field_counts = dict(Counter(winner_field_list))
+
+        # Prepare the result, ensuring "Producto sano" is excluded
+        result = {field: winner_field_counts.get(field, 0) for field in fields_of_interest if field != "Producto sano"}
+        result["No valid field"] = winner_field_counts.get("No Valid Value", 0)
+
+        return {"counts": result, "messages":messages}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
