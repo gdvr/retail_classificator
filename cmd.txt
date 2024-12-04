@@ -1,0 +1,13 @@
+ docker run -v "C:\Users\gerda\Documentos_NoDrive\Maestria\2024\4to Trimestre\Product Developtment\Proyecto final\retail_classificator\input:/app/input" --rm -it -p 5000:5000 --env-file .\.env --name retail_api retail_insights:latest /bin/sh
+python backend/deploy.py
+
+DATASET="datasets/WineQT.csv.parquet"
+TARGET=category
+MODEL="RandomForest"
+TRIALS=10
+DEPLOYMENT_TYPE=api
+INPUT_FOLDER=input
+OUTPUT_FOLDER=output
+# Archivo .env para API
+PORT=5000
+

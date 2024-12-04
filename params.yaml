@@ -1,0 +1,38 @@
+preprocessing:
+  target: category
+  features:
+  - Venta dia anterior
+  - Stock dia actual
+  - Last 4 Weeks Avg
+  - Days Since Last Sale
+  - Total Presence
+  - '% global tiendas'
+  - Percentage Difference
+  - Condition
+  - Remaining Days
+  - Remaining Broke
+  - has sales
+  - enough information
+train:
+  TEST_SIZE: 0.3
+  VALIDATE_SIZE: 0.2
+  RANDOM_STATE: 2024
+  CV: 5
+  alpha: 0.1
+continuas:
+- Venta dia anterior
+- Stock dia actual
+- Last 4 Weeks Avg
+- Days Since Last Sale
+- Total Presence
+- '% global tiendas'
+- Percentage Difference
+- Remaining Days
+discretas: []
+categoricas: []
+optuna:
+  RandomForest:
+    n_estimators: 155
+    max_depth: 16
+    min_samples_split: 6
+optimization: {}
