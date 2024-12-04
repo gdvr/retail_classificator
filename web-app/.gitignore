@@ -1,0 +1,30 @@
+# Dependencias de Node.js
+/node_modules/
+
+# Archivos de construcción
+/dist/
+
+# Archivos de configuración de NPM
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Configuración del editor y sistema operativo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Configuración de servicios en línea
+.netlify/
+.vercel/
+
+# Caché y archivos temporales de Vite
+.vite/
