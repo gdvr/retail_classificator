@@ -3,6 +3,7 @@ import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { CloudCog } from 'lucide-react';
 
 const FileUploadSchema = Yup.object().shape({
   uploadFile: Yup.mixed()
@@ -26,16 +27,13 @@ const FileUpload = () => {
 
     try {
       // Enviar archivo a la API
-      const response = await axios.post('http://localhost:8000/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axios.post('http://localhost:8000/upload-file', formData);
 
       if (response.status === 200) {
         // Guardar información de éxito en localStorage si es necesario
-        const { processingKey, message } = response.data;
-        localStorage.setItem('processingKey', processingKey);
+
+        const { message } = response.data;
+        // localStorage.setItem('processingKey', processingKey);
 
         // Mostrar notificación de éxito
         toast.success(message || 'Archivo cargado exitosamente.', {
@@ -52,6 +50,7 @@ const FileUpload = () => {
       setSubmitting(false);
       resetForm();
     } catch (error) {
+      console.log(error.response)
       console.error('Error al cargar el archivo:', error);
       toast.error('Error al cargar el archivo. Verifica la conexión con la API.', {
         position: "top-right",

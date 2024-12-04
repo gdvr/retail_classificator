@@ -7,9 +7,11 @@ import {
     YAxis,
     Tooltip,
     Legend,
-    PieChart,
-    Pie,
-    Cell,
+    RadarChart,
+    Radar,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
     ResponsiveContainer
 } from 'recharts';
 
@@ -60,82 +62,75 @@ const Badge = ({ children, variant = 'default' }) => {
 };
 
 const HomeApp = () => {
-    const [processedData, setProcessedData] = useState([]);
-    const [etiquetaStats, setEtiquetaStats] = useState([]);
-    const [categoryDistribution, setCategoryDistribution] = useState([]);
-    const [isProcessingKeyAvailable, setIsProcessingKeyAvailable] = useState(false);
+    const [fecha, setFecha] = useState('');
+    const [resultsData, setResultsData] = useState(null);
+    const [distributionData, setDistributionData] = useState([]);
 
-    useEffect(() => {
-        const processingKey = localStorage.getItem('processingKey');
-
-        if (processingKey) {
-            setIsProcessingKeyAvailable(true);
-            fetchProcessedData(processingKey);
-        }
-    }, []);
-
-    const fetchProcessedData = async (processingKey) => {
+    const handleDateSubmit = async (e) => {
+        e.preventDefault();
+        
         try {
-            // Realizar la solicitud GET con el processingKey en la URL
-            const response = await axios.get(`http://localhost:8000/processed-data/${processingKey}`);
-    
-            const mockApiData = response.data;
-
-            console.log(response);
-    
-            if (Array.isArray(mockApiData)) {
-                // Procesar estadísticas de etiquetas
-                const etiquetaCounts = mockApiData.reduce((acc, item) => {
-                    acc[item.etiqueta] = (acc[item.etiqueta] || 0) + 1;
-                    return acc;
-                }, {});
-    
-                const etiquetaStatsData = Object.entries(etiquetaCounts).map(([etiqueta, count]) => ({
-                    etiqueta,
-                    count
+            // Call the new endpoint with the selected date
+            const response = await axios.get(`http://localhost:8000/results?fecha=${fecha}T00:00:00`);
+            
+            // Process the counts from the response
+            const countsData = response.data.counts;
+            
+            // Transform counts into chart-friendly format
+            const distributionChartData = Object.entries(countsData)
+                .filter(([key, value]) => value > 0)
+                .map(([key, value]) => ({
+                    category: key,
+                    count: value
                 }));
-    
-                // Procesar distribución por categoría
-                const categoryCounts = mockApiData.reduce((acc, item) => {
-                    const category = item.categoryId.slice(0, 2);
-                    acc[category] = (acc[category] || 0) + 1;
-                    return acc;
-                }, {});
-    
-                const categoryData = Object.entries(categoryCounts).map(([category, count]) => ({
-                    name: category,
-                    value: count
-                }));
-    
-                setEtiquetaStats(etiquetaStatsData);
-                setCategoryDistribution(categoryData);
-                setProcessedData(mockApiData);
-            } else {
-                console.error("La respuesta de la API no es un array:", mockApiData);
-            }
+            
+            setResultsData(countsData);
+            setDistributionData(distributionChartData);
         } catch (error) {
-            console.error('Error fetching processed data:', error);
+            console.error('Error fetching results:', error);
+            // Optionally, set an error state to show to the user
         }
-    };    
+    };
 
-    // Paleta de colores para gráficos
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+    // Función para calcular el porcentaje total
+    const calculatePercentage = () => {
+        if (!resultsData) return 0;
+        const total = Object.values(resultsData).reduce((sum, count) => sum + count, 0);
+        return total;
+    };
 
     return (
         <div className="p-8 bg-gray-50 min-h-screen">
-            <h1 className="text-3xl font-bold mb-6">Análisis de Datos</h1>
+            <h1 className="text-3xl font-bold mb-6">Análisis de Resultados</h1>
 
-            {!isProcessingKeyAvailable ? (
-                <div className="text-center text-xl text-gray-600">
-                    No hay datos procesados. Por favor, cargue un archivo.
-                </div>
-            ) : (
+            {/* Date Input Form */}
+            <form onSubmit={handleDateSubmit} className="mb-6 flex items-center space-x-4">
+                <label htmlFor="fecha" className="text-sm font-medium">
+                    Seleccionar Fecha:
+                </label>
+                <input
+                    type="date"
+                    id="fecha"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="border rounded px-3 py-2"
+                    required
+                />
+                <button 
+                    type="submit" 
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                >
+                    Buscar Resultados
+                </button>
+            </form>
+
+            {resultsData && (
                 <div className="grid grid-cols-3 gap-6">
                     <div className="bg-white p-6 rounded-lg shadow-md col-span-2">
-                        <h3 className="text-xl font-semibold mb-4">Productos por Etiqueta</h3>
+                        <h3 className="text-xl font-semibold mb-4">Distribución de Resultados (Barras)</h3>
                         <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={etiquetaStats}>
-                                <XAxis dataKey="etiqueta" />
+                            <BarChart data={distributionData}>
+                                <XAxis dataKey="category" />
                                 <YAxis />
                                 <Tooltip />
                                 <Legend />
@@ -144,58 +139,60 @@ const HomeApp = () => {
                         </ResponsiveContainer>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold mb-4">Productos por Categoría</h3>
+                        <h3 className="text-xl font-semibold mb-4">Análisis Detallado (Radar)</h3>
                         <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={categoryDistribution}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {categoryDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
+                            <RadarChart outerRadius="80%" data={distributionData}>
+                                <PolarGrid />
+                                <PolarAngleAxis dataKey="category" />
+                                <PolarRadiusAxis 
+                                    angle={30} 
+                                    domain={[0, Math.max(...distributionData.map(d => d.count))]}
+                                />
+                                <Radar 
+                                    name="Resultados" 
+                                    dataKey="count" 
+                                    stroke="#8884d8" 
+                                    fill="#8884d8" 
+                                    fillOpacity={0.6} 
+                                />
                                 <Tooltip />
-                            </PieChart>
+                            </RadarChart>
                         </ResponsiveContainer>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow-md col-span-3">
-                        <h3 className="text-xl font-semibold mb-4">Resumen de Productos</h3>
+                        <h3 className="text-xl font-semibold mb-4">Resumen de Resultados</h3>
+                        <div className="mb-4">
+                            <p className="text-lg font-medium">Total de Resultados: {calculatePercentage()}</p>
+                        </div>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Descripción</TableHead>
-                                    <TableHead>Stock Actual</TableHead>
                                     <TableHead>Categoría</TableHead>
-                                    <TableHead>Etiqueta</TableHead>
-                                    <TableHead>Observación</TableHead>
+                                    <TableHead>Conteo</TableHead>
+                                    <TableHead>Porcentaje</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {processedData.map((item, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{item.productDescription}</TableCell>
-                                        <TableCell>{item.stockDiaActual}</TableCell>
-                                        <TableCell>{item.categoryId}</TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant={
-                                                    item.etiqueta === 'Crítico' ? 'destructive' :
-                                                        item.etiqueta === 'Alto' ? 'warning' : 'default'
-                                                }
-                                            >
-                                                {item.etiqueta}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{item.observacion}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {Object.entries(resultsData).map(([category, count]) => {
+                                    const percentage = count > 0 
+                                        ? ((count / calculatePercentage()) * 100).toFixed(2) 
+                                        : 0;
+                                    return (
+                                        <TableRow key={category}>
+                                            <TableCell>{category}</TableCell>
+                                            <TableCell>
+                                                <Badge 
+                                                    variant={
+                                                        count > 0 ? (count > 5 ? 'warning' : 'default') : 'destructive'
+                                                    }
+                                                >
+                                                    {count}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{percentage}%</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </div>
