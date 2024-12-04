@@ -149,7 +149,7 @@ async def results_by_date(fecha: str = Query(..., description="Filter by 'Fecha'
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/notify")
+@app.get("/notify")
 async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha' field"),
                            store_id: str = Query(None, description="Filter by 'StoreId' field")):
     try:
@@ -179,7 +179,6 @@ async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha'
             "producto nuevo sin movimiento"
         ]
         
-        winner_field_list = []
 
         messages = []
         for document in serialized_documents:
@@ -197,17 +196,10 @@ async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha'
                 messages.append(f"El producto {document['productId']} podria estar teniendo incremento abruptos en las ventas, por favor revisar la proyeccion y ajustar la cantidad a pedir, ultima venta hace {document['Days Since Last Sale']} dias, stock: {document['Stock dia actual']}, cantidad vendida: {document['Venta dia anterior']}, promedio de ultimas 4 semanas {document['Last 4 Weeks Avg']}")
             elif winner_field == 'Posible quiebre de stock por pedido insuficiente':
                 messages.append(f"El producto {document['productId']} podria estar quedandose sin stock suficiente favor de verificar la cantidad pedida, ultima venta hace {document['Days Since Last Sale']} dias, stock: {document['Stock dia actual']}, dias proyectados antes del quiebre de stock {document['Remaining Days']}")
-            if winner_field != "Producto sano":
-                winner_field_list.append(winner_field)
+          
 
-        # Count occurrences of each winner field
-        winner_field_counts = dict(Counter(winner_field_list))
 
-        # Prepare the result, ensuring "Producto sano" is excluded
-        result = {field: winner_field_counts.get(field, 0) for field in fields_of_interest if field != "Producto sano"}
-        result["No valid field"] = winner_field_counts.get("No Valid Value", 0)
-
-        return {"counts": result, "messages":messages}
+        return {"messages":messages}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
