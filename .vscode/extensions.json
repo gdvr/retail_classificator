@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "amazonwebservices.aws-toolkit-vscode",
+      "augustocdias.tasks-shell-input"
+    ]
+  }
+  
