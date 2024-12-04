@@ -442,7 +442,7 @@ def classify_rotation_type(mode_value):
 def calculate_percentage_diff_and_condition(df):
     df['Percentage Difference'] = (
         df['Venta dia anterior'] / df['Last 4 Weeks Avg'] - 1
-    ).replace([float('inf'), -float('inf')], float('nan'))  # Replace invalid values
+    ).replace([float('inf'), -float('inf')], 0)  # Replace invalid values with 0
 
     thresholds = {'A': 0.25, 'B': 0.40, 'C': 0.50, 'Unknown': 0.50}
     df['Threshold'] = df['Rotation Type'].map(thresholds)

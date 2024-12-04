@@ -95,10 +95,13 @@ async def upload_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as f:
             content = await file.read()  # Read the content of the file
             f.write(content)  # Write the content to the file
+
+        response = JSONResponse(content={"message": "File uploaded successfully", "file_path": file_path})
+        response.headers["Content-Type"] = "application/json"
+        return response
+
     except Exception as e:
         return JSONResponse(content={"message": f"Failed to save file: {str(e)}"}, status_code=500)
-
-    return {"message": "File uploaded successfully", "file_path": file_path}
 
 @app.get("/results")
 async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha' field")):
