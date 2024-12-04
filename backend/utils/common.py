@@ -17,6 +17,8 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from bson import ObjectId
+import math
 
 
 models_Def = {
@@ -550,3 +552,12 @@ def insertResults(df_test):
         print("Data successfully inserted into MongoDB!")
     else:
         print("No data to insert.")
+
+
+def serialize_mongo_document(doc):
+    if "_id" in doc and isinstance(doc["_id"], ObjectId):
+        doc["_id"] = str(doc["_id"])
+    for key, value in doc.items():
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            doc[key] = None  # Replace invalid float values with None
+    return doc

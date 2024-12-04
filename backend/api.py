@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from backend.utils.common import serialize_mongo_document
+from fastapi import FastAPI, HTTPException, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, create_model
 import joblib
@@ -6,7 +7,9 @@ from pathlib import Path
 import pandas as pd
 from typing import Dict, Type, Union, List
 import yaml
+from pymongo import MongoClient
 import os 
+from collections import Counter
 
 with open("params.yaml") as f:
     params = yaml.safe_load(f)
@@ -97,6 +100,61 @@ async def upload_file(file: UploadFile = File(...)):
 
     return {"message": "File uploaded successfully", "file_path": file_path}
 
+@app.get("/results")
+async def filter_by_fecha(fecha: str = Query(..., description="Filter by 'Fecha' field")):
+    try:
+        client = MongoClient("mongodb://localhost:27017/") 
+        db = client["retail_classificator"]
+        collection = db["results"]
+
+        
+        print(fecha)
+        documents = list(collection.find({"Fecha": fecha}))
+        serialized_documents = [serialize_mongo_document(doc) for doc in documents]
+        if not serialized_documents:
+            raise HTTPException(status_code=404, detail="No documents found with the given Fecha.")
+        
+
+        fields_of_interest = [
+            "Pedido insuficiente",
+            "Posible producto eliminando de catalogo",
+            "Posible quiebre de stock por pedido insuficiente",
+            "Posible venta atípica",
+            "Producto sano",
+            "inventario negativo",
+            "producto nuevo sin movimiento"
+        ]
+        
+        winner_field_list = []
+
+        for document in serialized_documents:
+            # Extract the values of fields_of_interest
+            values = {field: document.get(field, float('-inf')) for field in fields_of_interest}
+            
+            # Remove any None values from values
+            valid_values = {key: value for key, value in values.items() if value is not None}
+            
+            # If there are valid values, find the max value; otherwise, set a default winner_field
+            if valid_values:
+                winner_field = max(valid_values, key=valid_values.get)
+            else:                
+                winner_field = document["category"] or "Not Valid Value"
+            
+            # Add the winner field to the list for counting later
+            winner_field_list.append(winner_field)
+
+        # Step 2: Group by 'winner_field' and count occurrences
+        winner_field_counts = dict(Counter(winner_field_list))
+
+        # Step 3: Ensure all fields are in the result with a count, even if 0 occurrences
+        result = {field: winner_field_counts.get(field, 0) for field in fields_of_interest}
+        result["No valid field"] = winner_field_counts.get("No valid field", 0)
+
+        return {"counts": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    
 @app.get("/")
 def healthCheck():
     return "API online"
